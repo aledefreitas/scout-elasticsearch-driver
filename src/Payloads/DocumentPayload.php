@@ -26,6 +26,9 @@ class DocumentPayload extends TypePayload
         parent::__construct($model);
 
         $this->payload['id'] = $model->getScoutKey();
+        $this->payload['routing'] = $model->getRouting();
+
         $this->protectedKeys[] = 'id';
+        $this->protectedKeys[] = 'routing';
     }
 }

@@ -159,4 +159,16 @@ trait Searchable
     {
         return $this->getKeyName();
     }
+
+
+    /**
+     * Returns the routing to use in elastic search
+     *
+     * @return string
+     */
+    public function getRouting()
+    {
+        $keyName = ($this->parentKey ?? $this->getScoutKeyName());
+        return $this->searchableAs() . '_' . $this->{$keyName};
+    }
 }
