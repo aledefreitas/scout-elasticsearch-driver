@@ -404,6 +404,18 @@ class FilterBuilder extends Builder
     }
 
     /**
+     * Delete using this query
+     *
+     * @return array
+     */
+    public function delete()
+    {
+        return $this
+            ->engine()
+            ->deleteByQuery($this);
+    }
+
+    /**
      * Explain the request.
      *
      * @return array

@@ -89,6 +89,40 @@ class ElasticEngine extends Engine
     }
 
     /**
+     * Performs a delete by query request
+     *
+     * @param \Laravel\Scout\Builder $builder
+     * @param array $options
+     *
+     * @return array|mixed
+     */
+    protected function performDeleteByQuery(Builder $builder, array $options = [])
+    {
+        $results = [];
+
+        $this->buildSearchQueryPayloadCollection($builder, $options)
+            ->each(function ($payload) use (&$results) {
+                $results = ElasticClient::deleteByQuery($payload);
+
+                $results['_payload'] = $payload;
+            });
+
+        return $results;
+    }
+
+    /**
+     * Delete by query
+     *
+     * @param \Laravel\Scout\Builder $builder
+     *
+     * @return array|mixed
+     */
+    public function deleteByQuery(Builder $builder)
+    {
+        return $this->performDeleteByQuery($builder);
+    }
+
+    /**
      * Build the payload collection.
      *
      * @param \Laravel\Scout\Builder $builder
@@ -106,13 +140,13 @@ class ElasticEngine extends Engine
                 $payload = new TypePayload($builder->model);
 
                 if (is_callable($rule)) {
-                    $payload->setIfNotEmpty('body.query.bool', call_user_func($rule, $builder));
+                    $payload->setIfNotEmpty('body.query', call_user_func($rule, $builder));
                 } else {
                     /** @var SearchRule $ruleEntity */
                     $ruleEntity = new $rule($builder);
 
                     if ($ruleEntity->isApplicable()) {
-                        $payload->setIfNotEmpty('body.query.bool', $ruleEntity->buildQueryPayload());
+                        $payload->setIfNotEmpty('body.query', $ruleEntity->buildQueryPayload());
 
                         if ($options['highlight'] ?? true) {
                             $payload->setIfNotEmpty('body.highlight', $ruleEntity->buildHighlightPayload());
