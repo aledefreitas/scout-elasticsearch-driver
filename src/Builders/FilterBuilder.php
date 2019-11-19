@@ -406,37 +406,43 @@ class FilterBuilder extends Builder
     /**
      * Delete using this query
      *
+     * @param  array  $options
+     *
      * @return array
      */
-    public function delete()
+    public function delete(array $options = [])
     {
         return $this
             ->engine()
-            ->deleteByQuery($this);
+            ->deleteByQuery($this, $options);
     }
 
     /**
      * Explain the request.
      *
+     * @param  array  $options
+     *
      * @return array
      */
-    public function explain()
+    public function explain(array $options = [])
     {
         return $this
             ->engine()
-            ->explain($this);
+            ->explain($this, $options);
     }
 
     /**
      * Profile the request.
      *
+     * @param  array  $options
+     *
      * @return array
      */
-    public function profile()
+    public function profile(array $options = [])
     {
         return $this
             ->engine()
-            ->profile($this);
+            ->profile($this, $options);
     }
 
     /**
