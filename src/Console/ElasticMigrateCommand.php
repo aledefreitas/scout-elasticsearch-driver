@@ -170,8 +170,9 @@ class ElasticMigrateCommand extends Command
                 ->putMapping($payload);
 
             $this->info(sprintf(
-                'The %s mapping was updated.',
-                $targetIndex
+                'The %s mapping was updated by %s.',
+                $targetIndex,
+                get_class($sourceModel)
             ));
         }
     }
