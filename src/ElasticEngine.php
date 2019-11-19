@@ -101,8 +101,8 @@ class ElasticEngine extends Engine
         $results = [];
 
         $this->buildSearchQueryPayloadCollection($builder, $options)
-            ->each(function ($payload) use (&$results) {
-                $results = ElasticClient::deleteByQuery($payload);
+            ->each(function ($payload) use (&$results, $options) {
+                $results = ElasticClient::deleteByQuery(array_merge($payload, $options));
 
                 $results['_payload'] = $payload;
             });
@@ -212,8 +212,8 @@ class ElasticEngine extends Engine
 
         $this
             ->buildSearchQueryPayloadCollection($builder, $options)
-            ->each(function ($payload) use (&$results) {
-                $results = ElasticClient::search($payload);
+            ->each(function ($payload) use (&$results, $options) {
+                $results = ElasticClient::search(array_merge($payload, $options));
 
                 $results['_payload'] = $payload;
 
@@ -283,8 +283,8 @@ class ElasticEngine extends Engine
 
         $this
             ->buildSearchQueryPayloadCollection($builder, array_merge($options, ['highlight' => false]))
-            ->each(function ($payload) use (&$count) {
-                $result = ElasticClient::count($payload);
+            ->each(function ($payload) use (&$count, $options) {
+                $result = ElasticClient::count(array_merge($payload, $options));
 
                 $count = $result['count'];
 
@@ -301,15 +301,16 @@ class ElasticEngine extends Engine
      *
      * @param \Illuminate\Database\Eloquent\Model $model
      * @param array $query
+     * @param  array  $options
      * @return mixed
      */
-    public function searchRaw(Model $model, $query)
+    public function searchRaw(Model $model, $query, array $options = [])
     {
         $payload = (new TypePayload($model))
             ->setIfNotEmpty('body', $query)
             ->get();
 
-        return ElasticClient::search($payload);
+        return ElasticClient::search(array_merge($payload, $options));
     }
 
     /**
