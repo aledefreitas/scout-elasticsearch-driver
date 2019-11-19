@@ -143,38 +143,37 @@ class ElasticMigrateCommand extends Command
         $sourceIndexConfigurator = $this->getIndexConfigurator();
 
         $targetIndex = $this->argument('target-index');
-        $targetType = $sourceModel->searchableAs();
-
-        $mapping = $sourceIndexConfigurator->getDefaultMapping();
 
         foreach ($sourceIndexConfigurator->types() as $sourceModel) {
             $sourceModel = $this->getModel($sourceModel);
-            $mapping = array_merge_recursive($mapping, $sourceModel->getMapping());
-        }
+            $targetType = $sourceModel->searchableAs();
 
-        if (empty($mapping)) {
-            $this->warn(sprintf(
-                'The %s mapping is empty.',
-                get_class($sourceIndexConfigurator)
+            $mapping = array_merge_recursive($sourceIndexConfigurator->getDefaultMapping(), $sourceModel->getMapping());
+
+            if (empty($mapping)) {
+                $this->warn(sprintf(
+                    'The %s mapping is empty.',
+                    get_class($sourceIndexConfigurator)
+                ));
+
+                return;
+            }
+
+            $payload = (new RawPayload())
+                ->set('index', $targetIndex)
+                ->set('type', $targetType)
+                ->set('include_type_name', 'true')
+                ->set('body.' . $targetType, $mapping)
+                ->get();
+
+            ElasticClient::indices()
+                ->putMapping($payload);
+
+            $this->info(sprintf(
+                'The %s mapping was updated.',
+                $targetIndex
             ));
-
-            return;
         }
-
-        $payload = (new RawPayload())
-            ->set('index', $targetIndex)
-            ->set('type', $targetType)
-            ->set('include_type_name', 'true')
-            ->set('body.' . $targetType, $mapping)
-            ->get();
-
-        ElasticClient::indices()
-            ->putMapping($payload);
-
-        $this->info(sprintf(
-            'The %s mapping was updated.',
-            $targetIndex
-        ));
     }
 
     /**
