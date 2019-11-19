@@ -14,9 +14,9 @@ trait RequiresModelArgument
      *
      * @return \Illuminate\Database\Eloquent\Model
      */
-    protected function getModel()
+    protected function getModel(?string $model = null)
     {
-        $modelClass = trim($this->argument('model'));
+        $modelClass = trim($model ?? $this->argument('model'));
 
         $modelInstance = new $modelClass;
 

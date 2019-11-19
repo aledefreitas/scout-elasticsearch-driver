@@ -56,4 +56,15 @@ abstract class IndexConfigurator
     {
         return $this->defaultMapping;
     }
+
+    /**
+     * Gets the Types belonging to this index
+     * Used for migration
+     *
+     * @return array
+     */
+    public function types()
+    {
+        return [];
+    }
 }

@@ -9,10 +9,15 @@ use ScoutElastic\Payloads\RawPayload;
 use ScoutElastic\Facades\ElasticClient;
 use ScoutElastic\Payloads\IndexPayload;
 use Symfony\Component\Console\Input\InputArgument;
+use ScoutElastic\Console\Features\RequiresIndexConfiguratorArgument;
 use ScoutElastic\Console\Features\RequiresModelArgument;
 
 class ElasticMigrateCommand extends Command
 {
+    use RequiresIndexConfiguratorArgument {
+        RequiresIndexConfiguratorArgument::getArguments as private indexArgument;
+    }
+
     use RequiresModelArgument {
         RequiresModelArgument::getArguments as private modelArgument;
     }
@@ -34,7 +39,7 @@ class ElasticMigrateCommand extends Command
      */
     protected function getArguments()
     {
-        $arguments = $this->modelArgument();
+        $arguments = $this->indexArgument();
 
         $arguments[] = ['target-index', InputArgument::REQUIRED, 'The index name to migrate'];
 
@@ -67,7 +72,7 @@ class ElasticMigrateCommand extends Command
     {
         $targetIndex = $this->argument('target-index');
 
-        $sourceIndexConfigurator = $this->getModel()
+        $sourceIndexConfigurator = $this
             ->getIndexConfigurator();
 
         $payload = (new RawPayload())
@@ -94,7 +99,7 @@ class ElasticMigrateCommand extends Command
     {
         $targetIndex = $this->argument('target-index');
 
-        $sourceIndexConfigurator = $this->getModel()
+        $sourceIndexConfigurator = $this
             ->getIndexConfigurator();
 
         $targetIndexPayload = (new RawPayload())
@@ -135,21 +140,22 @@ class ElasticMigrateCommand extends Command
      */
     protected function updateTargetIndexMapping()
     {
-        $sourceModel = $this->getModel();
-        $sourceIndexConfigurator = $sourceModel->getIndexConfigurator();
+        $sourceIndexConfigurator = $this->getIndexConfigurator();
 
         $targetIndex = $this->argument('target-index');
         $targetType = $sourceModel->searchableAs();
 
-        $mapping = array_merge_recursive(
-            $sourceIndexConfigurator->getDefaultMapping(),
-            $sourceModel->getMapping()
-        );
+        $mapping = $sourceIndexConfigurator->getDefaultMapping();
+
+        foreach ($sourceIndexConfigurator->types() as $sourceModel) {
+            $sourceModel = $this->getModel($sourceModel);
+            $mapping = array_merge_recursive($mapping, $sourceModel->getMapping());
+        }
 
         if (empty($mapping)) {
             $this->warn(sprintf(
                 'The %s mapping is empty.',
-                get_class($sourceModel)
+                get_class($sourceIndexConfigurator)
             ));
 
             return;
@@ -270,12 +276,15 @@ class ElasticMigrateCommand extends Command
      */
     protected function importDocumentsToTargetIndex()
     {
-        $sourceModel = $this->getModel();
+        $sourceModels = $this->getIndexConfigurator()->types();
 
-        $this->call(
-            'scout:import',
-            ['model' => get_class($sourceModel)]
-        );
+        foreach ($sourceModels as $sourceModel) {
+            $sourceModel = $this->getModel($sourceModel);
+            $this->call(
+                'scout:import',
+                ['model' => get_class($sourceModel)]
+            );
+        }
     }
 
     /**
@@ -286,7 +295,6 @@ class ElasticMigrateCommand extends Command
     protected function deleteSourceIndex()
     {
         $sourceIndexConfigurator = $this
-            ->getModel()
             ->getIndexConfigurator();
 
         if ($this->isAliasExists($sourceIndexConfigurator->getName())) {
@@ -326,8 +334,7 @@ class ElasticMigrateCommand extends Command
      */
     public function handle()
     {
-        $sourceModel = $this->getModel();
-        $sourceIndexConfigurator = $sourceModel->getIndexConfigurator();
+        $sourceIndexConfigurator = $this->getIndexConfigurator();
 
         if (!in_array(Migratable::class, class_uses_recursive($sourceIndexConfigurator))) {
             $this->error(sprintf(
@@ -352,8 +359,8 @@ class ElasticMigrateCommand extends Command
         $this->createAliasForTargetIndex($sourceIndexConfigurator->getName());
 
         $this->info(sprintf(
-            'The %s model successfully migrated to the %s index.',
-            get_class($sourceModel),
+            'The %s index configurator successfully migrated to the %s index.',
+            get_class($sourceIndexConfigurator),
             $this->argument('target-index')
         ));
     }
