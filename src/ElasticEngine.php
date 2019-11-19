@@ -117,9 +117,9 @@ class ElasticEngine extends Engine
      *
      * @return array|mixed
      */
-    public function deleteByQuery(Builder $builder)
+    public function deleteByQuery(Builder $builder, array $options = [])
     {
-        return $this->performDeleteByQuery($builder);
+        return $this->performDeleteByQuery($builder, $options);
     }
 
     /**
@@ -228,7 +228,7 @@ class ElasticEngine extends Engine
     /**
      * {@inheritdoc}
      */
-    public function search(Builder $builder)
+    public function search(Builder $builder, array $options = [])
     {
         return $this->performSearch($builder);
     }
@@ -251,11 +251,11 @@ class ElasticEngine extends Engine
      * @param \Laravel\Scout\Builder $builder
      * @return array|mixed
      */
-    public function explain(Builder $builder)
+    public function explain(Builder $builder, array $options = [])
     {
-        return $this->performSearch($builder, [
+        return $this->performSearch($builder, array_merge($options, [
             'explain' => true,
-        ]);
+        ]));
     }
 
     /**
@@ -264,11 +264,11 @@ class ElasticEngine extends Engine
      * @param \Laravel\Scout\Builder $builder
      * @return array|mixed
      */
-    public function profile(Builder $builder)
+    public function profile(Builder $builder, array $options = [])
     {
-        return $this->performSearch($builder, [
+        return $this->performSearch($builder, array_merge($options, [
             'profile' => true,
-        ]);
+        ]));
     }
 
     /**
@@ -277,12 +277,12 @@ class ElasticEngine extends Engine
      * @param \Laravel\Scout\Builder $builder
      * @return int
      */
-    public function count(Builder $builder)
+    public function count(Builder $builder, array $options = [])
     {
         $count = 0;
 
         $this
-            ->buildSearchQueryPayloadCollection($builder, ['highlight' => false])
+            ->buildSearchQueryPayloadCollection($builder, array_merge($options, ['highlight' => false]))
             ->each(function ($payload) use (&$count) {
                 $result = ElasticClient::count($payload);
 
@@ -339,28 +339,15 @@ class ElasticEngine extends Engine
             $columns[] = $scoutKeyName;
         }
 
-        $ids = $this->mapIds($results)->all();
-
-        $query = $model::usesSoftDelete() ? $model->withTrashed() : $model->newQuery();
-
-        $models = $query
-            ->whereIn($scoutKeyName, $ids)
-            ->get($columns)
-            ->keyBy($scoutKeyName);
-
         return Collection::make($results['hits']['hits'])
-            ->map(function ($hit) use ($models) {
-                $id = $hit['_id'];
+            ->map(function ($hit) {
+                $model = $this->model->newInstance($hit);
 
-                if (isset($models[$id])) {
-                    $model = $models[$id];
-
-                    if (isset($hit['highlight'])) {
-                        $model->highlight = new Highlight($hit['highlight']);
-                    }
-
-                    return $model;
+                if (isset($hit['highlight'])) {
+                    $model->highlight = new Highlight($hit['highlight']);
                 }
+
+                return $model;
             })
             ->filter()
             ->values();
