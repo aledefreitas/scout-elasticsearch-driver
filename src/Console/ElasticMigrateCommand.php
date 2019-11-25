@@ -41,7 +41,7 @@ class ElasticMigrateCommand extends Command
     {
         $arguments = $this->indexArgument();
 
-        $arguments[] = ['target-index', InputArgument::REQUIRED, 'The index name to migrate'];
+        $arguments[] = ['target-index', InputArgument::OPTIONAL, 'The index name to migrate'];
 
         return $arguments;
     }
@@ -51,9 +51,11 @@ class ElasticMigrateCommand extends Command
      *
      * @return bool
      */
-    protected function isTargetIndexExists()
+    protected function isTargetIndexExists(?string $targetIndex = null)
     {
-        $targetIndex = $this->argument('target-index');
+        $targetIndex = $targetIndex ??
+            $this->argument('target-index') ??
+            $this->getIndexConfigurator()->getName();
 
         $payload = (new RawPayload())
             ->set('index', $targetIndex)
@@ -70,7 +72,8 @@ class ElasticMigrateCommand extends Command
      */
     protected function createTargetIndex()
     {
-        $targetIndex = $this->argument('target-index');
+        $targetIndex = $this->argument('target-index') ??
+            $this->getIndexConfigurator()->getName();
 
         $sourceIndexConfigurator = $this
             ->getIndexConfigurator();
@@ -97,7 +100,8 @@ class ElasticMigrateCommand extends Command
      */
     protected function updateTargetIndex()
     {
-        $targetIndex = $this->argument('target-index');
+        $targetIndex = $this->argument('target-index') ??
+            $this->getIndexConfigurator()->getName();
 
         $sourceIndexConfigurator = $this
             ->getIndexConfigurator();
@@ -142,7 +146,8 @@ class ElasticMigrateCommand extends Command
     {
         $sourceIndexConfigurator = $this->getIndexConfigurator();
 
-        $targetIndex = $this->argument('target-index');
+        $targetIndex = $this->argument('target-index') ??
+            $this->getIndexConfigurator()->getName();
 
         foreach ($sourceIndexConfigurator->types() as $sourceModel) {
             $sourceModel = $this->getModel($sourceModel);
@@ -248,7 +253,8 @@ class ElasticMigrateCommand extends Command
      */
     protected function createAliasForTargetIndex($name)
     {
-        $targetIndex = $this->argument('target-index');
+        $targetIndex = $this->argument('target-index') ??
+            $this->getIndexConfigurator()->getName();
 
         if ($this->isAliasExists($name)) {
             $this->deleteAlias($name);
@@ -346,22 +352,31 @@ class ElasticMigrateCommand extends Command
             return;
         }
 
-        $this->isTargetIndexExists() ? $this->updateTargetIndex() : $this->createTargetIndex();
+        $targetExists = $this->isTargetIndexExists();
+        $isExistantIndexMigration = (
+            !$targetExists and
+            $this->argument('target-index') and
+            $this->argument('target-index') !== $this->getIndexConfigurator()->getName()
+        );
 
-        $this->updateTargetIndexMapping();
+        if (!$targetExists) {
+            $this->createTargetIndex();
 
-        $this->createAliasForTargetIndex($sourceIndexConfigurator->getWriteAlias());
+            $this->updateTargetIndexMapping();
+            $this->createAliasForTargetIndex($sourceIndexConfigurator->getWriteAlias());
+            $this->importDocumentsToTargetIndex();
 
-        $this->importDocumentsToTargetIndex();
-
-        $this->deleteSourceIndex();
-
-        $this->createAliasForTargetIndex($sourceIndexConfigurator->getName());
+            if ($isExistantIndexMigration === true) {
+                $this->deleteSourceIndex();
+                $this->createAliasForTargetIndex($sourceIndexConfigurator->getName());
+            }
+        }
 
         $this->info(sprintf(
             'The %s index configurator successfully migrated to the %s index.',
             get_class($sourceIndexConfigurator),
-            $this->argument('target-index')
+            $this->argument('target-index') ??
+                $this->getIndexConfigurator()->getName()
         ));
     }
 }
