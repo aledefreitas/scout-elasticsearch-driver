@@ -43,7 +43,8 @@ class BulkIndexer implements IndexerInterface
             }
 
             $actionPayload = (new RawPayload())
-                ->set('index._id', $model->getScoutKey());
+                ->set('index._id', $model->getScoutKey())
+                ->setIfNotEmpty('index.routing', $model->getRouting());
 
             $bulkPayload
                 ->add('body', $actionPayload->get())
