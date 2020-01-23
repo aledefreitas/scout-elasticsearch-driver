@@ -4,14 +4,13 @@ namespace ScoutElastic;
 
 use Exception;
 use Illuminate\Support\Arr;
+use Laravel\Scout\Searchable as SourceSearchable;
 use ScoutElastic\Builders\FilterBuilder;
 use ScoutElastic\Builders\SearchBuilder;
-use Laravel\Scout\Searchable as SourceSearchable;
 
 trait Searchable
 {
     use SourceSearchable {
-        SourceSearchable::bootSearchable as sourceBootSearchable;
         SourceSearchable::getScoutKeyName as sourceGetScoutKeyName;
     }
 
@@ -23,29 +22,6 @@ trait Searchable
     private $highlight = null;
 
     /**
-     * Defines if the model is searchable.
-     *
-     * @var bool
-     */
-    protected static $isSearchableTraitBooted = false;
-
-    /**
-     * Boot the trait.
-     *
-     * @return void
-     */
-    public static function bootSearchable()
-    {
-        if (static::$isSearchableTraitBooted) {
-            return;
-        }
-
-        self::sourceBootSearchable();
-
-        static::$isSearchableTraitBooted = true;
-    }
-
-    /**
      * Get the index configurator.
      *
      * @return \ScoutElastic\IndexConfigurator
@@ -55,8 +31,8 @@ trait Searchable
     {
         static $indexConfigurator;
 
-        if (!$indexConfigurator) {
-            if (!isset($this->indexConfigurator) || empty($this->indexConfigurator)) {
+        if (! $indexConfigurator) {
+            if (! isset($this->indexConfigurator) || empty($this->indexConfigurator)) {
                 throw new Exception(sprintf(
                     'An index configurator for the %s model is not specified.',
                     __CLASS__
@@ -108,7 +84,7 @@ trait Searchable
     {
         $softDelete = static::usesSoftDelete() && config('scout.soft_delete', false);
 
-        if ($query == '*') {
+        if ($query === '*') {
             return new FilterBuilder(new static, $callback, $softDelete);
         } else {
             return new SearchBuilder(new static, $query, $callback, $softDelete);
