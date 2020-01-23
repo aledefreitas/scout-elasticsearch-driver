@@ -11,7 +11,6 @@ use ScoutElastic\Payloads\IndexPayload;
 use ScoutElastic\Payloads\RawPayload;
 use Symfony\Component\Console\Input\InputArgument;
 use ScoutElastic\Console\Features\RequiresIndexConfiguratorArgument;
-use ScoutElastic\Console\Features\RequiresModelArgument;
 
 class ElasticMigrateCommand extends Command
 {
