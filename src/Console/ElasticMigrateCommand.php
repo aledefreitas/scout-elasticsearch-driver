@@ -162,12 +162,8 @@ class ElasticMigrateCommand extends Command
                     get_class($sourceIndexConfigurator)
                 ));
 
-        $payload = (new RawPayload())
-            ->set('index', $targetIndex)
-            ->set('type', $targetType)
-            ->set('include_type_name', 'true')
-            ->set('body.'.$targetType, $mapping)
-            ->get();
+                return;
+            }
 
             $payload = (new RawPayload())
                 ->set('index', $targetIndex)
