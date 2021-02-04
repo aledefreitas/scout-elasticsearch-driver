@@ -34,7 +34,7 @@ class SingleIndexerTest extends AbstractIndexerTest
                 ],
             ]);
 
-        (new SingleIndexer())
+        (new SingleIndexer)
             ->update($this->models);
 
         $this->addToAssertionCount(1);
@@ -78,7 +78,7 @@ class SingleIndexerTest extends AbstractIndexerTest
                 ],
             ]);
 
-        (new SingleIndexer())
+        (new SingleIndexer)
             ->update($this->models);
 
         $this->addToAssertionCount(1);
@@ -112,7 +112,7 @@ class SingleIndexerTest extends AbstractIndexerTest
                 ],
             ]);
 
-        (new SingleIndexer())
+        (new SingleIndexer)
             ->update($this->models);
 
         $this->addToAssertionCount(1);
@@ -152,8 +152,53 @@ class SingleIndexerTest extends AbstractIndexerTest
                 ],
             ]);
 
-        (new SingleIndexer())
+        (new SingleIndexer)
             ->delete($this->models);
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testDeleteWithSpecifiedDocumentRefreshOption()
+    {
+        Config::set('scout_elastic.document_refresh', true);
+
+        ElasticClient
+            ::shouldReceive('delete')
+            ->once()
+            ->with([
+                'index' => 'test',
+                'type' => 'test',
+                'id' => 1,
+                'refresh' => true,
+                'client' => [
+                    'ignore' => 404,
+                ],
+            ])
+            ->shouldReceive('delete')
+            ->once()
+            ->with([
+                'index' => 'test',
+                'type' => 'test',
+                'id' => 2,
+                'refresh' => true,
+                'client' => [
+                    'ignore' => 404,
+                ],
+            ])
+            ->shouldReceive('delete')
+            ->once()
+            ->with([
+                'index' => 'test',
+                'type' => 'test',
+                'id' => 3,
+                'refresh' => true,
+                'client' => [
+                    'ignore' => 404,
+                ],
+            ]);
+
+        (new SingleIndexer())
+                ->delete($this->models);
 
         $this->addToAssertionCount(1);
     }

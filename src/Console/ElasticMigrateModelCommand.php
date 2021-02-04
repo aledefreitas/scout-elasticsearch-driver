@@ -12,7 +12,7 @@ use ScoutElastic\Payloads\RawPayload;
 use Symfony\Component\Console\Input\InputArgument;
 use ScoutElastic\Console\Features\RequiresIndexConfiguratorArgument;
 
-class ElasticMigrateCommand extends Command
+class ElasticMigrateModelCommand extends Command
 {
     use RequiresIndexConfiguratorArgument {
         RequiresIndexConfiguratorArgument::getArguments as private indexArgument;
@@ -25,7 +25,7 @@ class ElasticMigrateCommand extends Command
     /**
      * {@inheritdoc}
      */
-    protected $name = 'elastic:migrate';
+    protected $name = 'elastic:migrate-model';
 
     /**
      * {@inheritdoc}
@@ -57,7 +57,7 @@ class ElasticMigrateCommand extends Command
             $this->argument('target-index') ??
             $this->getIndexConfigurator()->getName();
 
-        $payload = (new RawPayload())
+        $payload = (new RawPayload)
             ->set('index', $targetIndex)
             ->get();
 
@@ -78,7 +78,7 @@ class ElasticMigrateCommand extends Command
         $sourceIndexConfigurator = $this
             ->getIndexConfigurator();
 
-        $payload = (new RawPayload())
+        $payload = (new RawPayload)
             ->set('index', $targetIndex)
             ->setIfNotEmpty('body.settings', $sourceIndexConfigurator->getSettings())
             ->get();
@@ -106,7 +106,7 @@ class ElasticMigrateCommand extends Command
         $sourceIndexConfigurator = $this
             ->getIndexConfigurator();
 
-        $targetIndexPayload = (new RawPayload())
+        $targetIndexPayload = (new RawPayload)
             ->set('index', $targetIndex)
             ->get();
 
@@ -116,7 +116,7 @@ class ElasticMigrateCommand extends Command
             $indices->close($targetIndexPayload);
 
             if ($settings = $sourceIndexConfigurator->getSettings()) {
-                $targetIndexSettingsPayload = (new RawPayload())
+                $targetIndexSettingsPayload = (new RawPayload)
                     ->set('index', $targetIndex)
                     ->set('body.settings', $settings)
                     ->get();
@@ -185,12 +185,12 @@ class ElasticMigrateCommand extends Command
     /**
      * Check if an alias exists.
      *
-     * @param string $name
+     * @param  string  $name
      * @return bool
      */
     protected function isAliasExists($name)
     {
-        $payload = (new RawPayload())
+        $payload = (new RawPayload)
             ->set('name', $name)
             ->get();
 
@@ -201,12 +201,12 @@ class ElasticMigrateCommand extends Command
     /**
      * Get an alias.
      *
-     * @param string $name
+     * @param  string  $name
      * @return array
      */
     protected function getAlias($name)
     {
-        $getPayload = (new RawPayload())
+        $getPayload = (new RawPayload)
             ->set('name', $name)
             ->get();
 
@@ -217,7 +217,7 @@ class ElasticMigrateCommand extends Command
     /**
      * Delete an alias.
      *
-     * @param string $name
+     * @param  string  $name
      * @return void
      */
     protected function deleteAlias($name)
@@ -229,7 +229,7 @@ class ElasticMigrateCommand extends Command
         }
 
         foreach ($aliases as $index => $alias) {
-            $deletePayload = (new RawPayload())
+            $deletePayload = (new RawPayload)
                 ->set('index', $index)
                 ->set('name', $name)
                 ->get();
@@ -248,7 +248,7 @@ class ElasticMigrateCommand extends Command
     /**
      * Create an alias for the target index.
      *
-     * @param string $name
+     * @param  string  $name
      * @return void
      */
     protected function createAliasForTargetIndex($name)
@@ -260,7 +260,7 @@ class ElasticMigrateCommand extends Command
             $this->deleteAlias($name);
         }
 
-        $payload = (new RawPayload())
+        $payload = (new RawPayload)
             ->set('index', $targetIndex)
             ->set('name', $name)
             ->get();
@@ -307,7 +307,7 @@ class ElasticMigrateCommand extends Command
             $aliases = $this->getAlias($sourceIndexConfigurator->getName());
 
             foreach ($aliases as $index => $alias) {
-                $payload = (new RawPayload())
+                $payload = (new RawPayload)
                     ->set('index', $index)
                     ->get();
 

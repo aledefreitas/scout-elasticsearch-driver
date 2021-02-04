@@ -64,11 +64,15 @@ class BulkIndexer implements IndexerInterface
         $bulkPayload = new TypePayload($model);
 
         $models->each(function ($model) use ($bulkPayload) {
-            $actionPayload = (new RawPayload())
+            $actionPayload = (new RawPayload)
                 ->set('delete._id', $model->getScoutKey());
 
             $bulkPayload->add('body', $actionPayload->get());
         });
+
+        if ($documentRefresh = config('scout_elastic.document_refresh')) {
+            $bulkPayload->set('refresh', $documentRefresh);
+        }
 
         $bulkPayload->set('client.ignore', 404);
 

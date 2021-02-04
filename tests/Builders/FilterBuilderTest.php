@@ -236,6 +236,42 @@ class FilterBuilderTest extends AbstractTestCase
         );
     }
 
+    public function testWhereMatch()
+    {
+        $builder = (new FilterBuilder($this->mockModel()))
+            ->whereMatch('tags', 'travel')
+            ->whereMatch('tags', 'spain');
+
+        $this->assertEquals(
+            [
+                'must' => [
+                    ['match' => ['tags' => 'travel']],
+                    ['match' => ['tags' => 'spain']],
+                ],
+                'must_not' => [],
+            ],
+            $builder->wheres
+        );
+    }
+
+    public function testWhereNotMatch()
+    {
+        $builder = (new FilterBuilder($this->mockModel()))
+            ->whereNotMatch('tags', 'travel')
+            ->whereNotMatch('tags', 'spain');
+
+        $this->assertEquals(
+            [
+                'must' => [],
+                'must_not' => [
+                    ['match' => ['tags' => 'travel']],
+                    ['match' => ['tags' => 'spain']],
+                ],
+            ],
+            $builder->wheres
+        );
+    }
+
     public function testWhereRegexp()
     {
         $builder = (new FilterBuilder($this->mockModel()))
@@ -388,6 +424,25 @@ class FilterBuilderTest extends AbstractTestCase
         );
     }
 
+    public function testOrderRaw()
+    {
+        $orderRaw = [
+            '_geo_distance' =>  [
+                'coordinates' => [
+                    'lat'   =>  51.507351,
+                    'lon'   =>  -0.127758,
+                ],
+                'order'     =>  'asc',
+                'unit'      =>  'm',
+            ],
+        ];
+
+        $builder = (new FilterBuilder($this->mockModel()))
+            ->orderRaw($orderRaw);
+
+        $this->assertSame([$orderRaw], $builder->orders);
+    }
+
     public function testWith()
     {
         $builder = (new FilterBuilder($this->mockModel()))
@@ -481,6 +536,24 @@ class FilterBuilderTest extends AbstractTestCase
                 'must_not' => [],
             ],
             $builder->wheres
+        );
+    }
+
+    public function testMinScore()
+    {
+        $builder = (new FilterBuilder($this->mockModel()));
+
+        $this->assertSame(
+            null,
+            $builder->minScore
+        );
+
+        $builder = (new FilterBuilder($this->mockModel()))
+            ->minScore(0.5);
+
+        $this->assertSame(
+            0.5,
+            $builder->minScore
         );
     }
 }
